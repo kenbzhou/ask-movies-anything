@@ -1,6 +1,6 @@
 import os
 import requests
-from imdb_handler import get_imdb_data_by_title
+import handler
 from dotenv import load_dotenv
 from langchain.tools import Tool
 from langchain.prompts import PromptTemplate
@@ -8,51 +8,74 @@ from langchain_openai import ChatOpenAI
 from langchain.chains import LLMChain
 from langchain.agents import initialize_agent, AgentType
 
-# Load environment variables from .env file
-load_dotenv()
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+def prompt_client(prompt):
+    # Load environment variables from .env file
+    load_dotenv()
+    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
-movie_data_extraction_tool = Tool.from_function(
-    func=get_imdb_data_by_title,
-    name="DataFetcher",
-    description="Fetches movie or show data from the string of its title into a json"
-)
+    # Instantiate OpenAI and prompt template
+    llm = ChatOpenAI(model="gpt-3.5-turbo")
+    prompt_template = "Output the desired attribute '{content}' from the returned data"
+    llm_chain = LLMChain(
+        llm=llm,
+        prompt=PromptTemplate.from_template(prompt_template)
+    )
 
-prompt_template = "Output the desired attribute of {content}"
-llm = ChatOpenAI(model="gpt-3.5-turbo")
-llm_chain = LLMChain(
-    llm=llm,
-    prompt=PromptTemplate.from_template(prompt_template)
-)
+    # Instantiate tools
+    check_if_movie_exists = Tool.from_function(
+        func=handler.get_data_by_title,
+        name="movieChecker",
+        description="."
+    )
 
-outputter_tool = Tool.from_function(
-    func=llm_chain.run,
-    name="Outputter",
-    description="Outputs the desired attribute from a jsonified list of attributes"
-)
+    maturity_level_tool = Tool.from_function(
+        func=handler.get_maturity_level,
+        name="MaturityLevelGetter",
+        description="Fetches the maturity level of a show/movie from the string of its title."
+    )
 
-tools = [movie_data_extraction_tool, outputter_tool]
+    release_year_tool = Tool.from_function(
+        func=handler.get_release_year,
+        name="ReleaseYearGetter",
+        description="Fetches the release year of a show/movie from the string of its title."
+    )
 
-agent = initialize_agent(
-    tools=tools,
-    agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
-    llm=llm,
-    verbose=True
-)
+    plot_tool = Tool.from_function(
+        func=handler.get_plot,
+        name="PlotGetter",
+        description="Fetches the plot of a show/movie from the string of its title."
+    )
 
-prompt = "What is the cast of The Office?"
-print(agent.invoke(prompt))
+    rating_tool = Tool.from_function(
+        func=handler.get_rating,
+        name="RatingGetter",
+        description="Fetches the critical rating of a show/movie from the string of its title."
+    )
+
+    cast_tool = Tool.from_function(
+        func=handler.get_cast,
+        name="CastGetter",
+        description="Fetches the cast/actors of a show/movie from the string of its title."
+    )
+
+    character_tool = Tool.from_function(
+        func=handler.get_characters,
+        name="CharacterGetter",
+        description="Fetches the characters of a show/movie from the string of its title."
+    )
+
+    tools = [check_if_movie_exists, maturity_level_tool, release_year_tool, 
+             plot_tool, rating_tool, cast_tool, character_tool]
 
 
+    agent = initialize_agent(
+        tools=tools,
+        agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+        llm=llm,
+        verbose=True
+    )
 
+    return agent.invoke(prompt)['output']
 
-# initialize the models
+print(prompt_client("Who are the characters and the cast in the Warcraft Movie?"))
 
-
-# Step 1: User Provides Input
-
-# Step 2: Input is parsed into a movie or show title.
-
-# Step 3: Movie/Show Title is passed into the IMDB API
-
-# Step 4: IMDB JSON is provided as context for a final response.
