@@ -1,4 +1,6 @@
 import requests
+
+
 def get_data_by_title(title):
     data = {}
     headers = {
@@ -10,8 +12,9 @@ def get_data_by_title(title):
     response = requests.get(url_find, headers=headers, params={"query":title})
     nfo = response.json()
     try:
-        first_match = nfo['titleResults']['results'][0]
-        response_title = requests.get(url_title, headers=headers, params={"id":first_match['id']})
+        i = get_index_of_best_title(nfo, title)
+        match = nfo['titleResults']['results'][i]
+        response_title = requests.get(url_title, headers=headers, params={"id":match['id']})
         info = response_title.json()
         data = {
             "title": info['titleText']['text'],
@@ -26,6 +29,10 @@ def get_data_by_title(title):
         return f"Failed to retrieve data for {title}. Title might be incorrect"
         
     return data
+
+def get_index_of_best_title(info, title):
+    titles = [entry['titleNameText'] for entry in info['titleResults']['results']]
+    return titles.index(title)
 
 def get_maturity_level(title):
     try: 
