@@ -14,7 +14,7 @@ def prompt_client(prompt):
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
     # Instantiate OpenAI and prompt template
-    llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0.7)
+    llm = ChatOpenAI(openai_api_key=OPENAI_API_KEY, model="gpt-3.5-turbo", temperature=0.7)
 
     # Instantiate tools
     handle_bad_prompt_tool = Tool.from_function(
@@ -28,14 +28,17 @@ def prompt_client(prompt):
     ambiguous_tool = Tool.from_function(
         func=llm_ambig_chain.run,
         name="Disambiguator",
-        description="Given an ambiguous description or inexact title of a movie, try to come up with its exact movie title."
+        description="Given an ambiguous description or inexact title of a movie, try to come up with its exact movie title. Omit the year of the movie."
     )
+
 
     maturity_level_tool = Tool.from_function(
         func=handler.get_maturity_level,
         name="MaturityLevelGetter",
         description="Fetches the maturity level of a show/movie from the string of its title."
     )
+
+    print("tool instantiated")
 
     release_year_tool = Tool.from_function(
         func=handler.get_release_year,
