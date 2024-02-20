@@ -24,7 +24,8 @@ def get_data_by_title(title):
             "title":         info['titleText']['text'],
             "maturity-level":info['certificate']['rating'],
             "release-year":  info['releaseDate']['year'],
-            "series-type":   match['titleTypeText'],
+            "series-type":   match['imageType'],
+            "poster":        match['titlePosterImageModel']['url'],
             "plot":          info['plot']['plotText']['plainText'],
             "rating":        info['ratingsSummary']['aggregateRating'],
             "top-stars":     [entry for entry in match['topCredits']],
@@ -98,4 +99,10 @@ def get_characters(title):
     except:
         return f"Failed to retrieve characters for {title}. Title might be incorrect"
 
+def get_poster_url(title):
+    try: 
+        data = get_data_by_title(title)
+        return data['poster']
+    except:
+        return f"Failed to retrieve poster url for {title}. Title might be incorrect"
 
